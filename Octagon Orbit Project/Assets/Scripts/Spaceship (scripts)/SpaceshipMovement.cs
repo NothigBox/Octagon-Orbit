@@ -1,28 +1,25 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
+enum MoveDirection {up, down, right, left, crash}
 public class SpaceshipMovement : MonoBehaviour
 {
     [SerializeField] private float speedX;
     [SerializeField] private float speedY;
     [SerializeField] private float rotationSpeed;
-    [SerializeField] private Transform camera;
     
-    [SerializeField] private Tilemap tilemap1;
-    
-    private Tilemap tilemap;
     private float currentRotation;
-    private float currentDirection;
+    private MoveDirection currentDirection;
     
     private void Awake()
     {
         currentRotation = 0f;
-            
-        tilemap = GetComponent<Tilemap>();
+        currentDirection = MoveDirection.up;
     }
 
     void Update()
@@ -33,38 +30,34 @@ public class SpaceshipMovement : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        Vector3 a = tilemap.CellToWorld(Vector3Int.zero);
-        Vector3 offset = new Vector3(2.5f, 4.5f, 0f);
-        Vector3 direction = (transform.position - offset) - camera.position;
-        
-        //for (float i = a.; i < 1f; i += 0.5f)
+        Vector3 planetDirection = (other.transform.position - transform.position).normalized;
+
+        if (currentDirection == MoveDirection.up || currentDirection == MoveDirection.down)
         {
-            //for (float h = -1f; h < 1f; h += 0.5f)
-            {
-                Debug.DrawRay(camera.position, direction, Color.yellow, 1000f, false);
-                if (Physics.Raycast(camera.position, direction, Single.PositiveInfinity))
-                    Debug.Log($"hola");
-            }
+            currentDirection = planetDirection.x > 0f ? 
+                MoveDirection.right : planetDirection.x < 0f ? 
+                    MoveDirection.left : MoveDirection.crash;
         }
-        StartCoroutine(RotatingCoroutine(90f));
-        StartCoroutine(ChangingDirectionCoroutine(1));
+        
+        Debug.Log(currentDirection);
+        
+        SetDirection(currentDirection);
     }
 
+    void SetDirection(MoveDirection direction)
+    {
+        
+    }
+    
     IEnumerator RotatingCoroutine(float finalRotation)
     {
         float rotationSum = currentRotation;
 
         while (rotationSum < finalRotation)
         {
-            float rotationRad = rotationSum * Mathf.Deg2Rad;
+            float rotationRad = rotationSum;
             
-            tilemap.orientationMatrix = new Matrix4x4
-            (
-                new Vector4(Mathf.Cos(rotationRad), -Mathf.Sin(rotationRad), 0f, 0f),
-                new Vector4(Mathf.Sin(rotationRad), Mathf.Cos(rotationRad), 0f, 0f),
-                new Vector4(0f, 0f, 1f, 0f),
-                new Vector4(0f, 0f, 0f, 1f)
-            );
+            transform.localRotation = Quaternion.Euler(Vector3.forward * rotationSum);
 
             rotationSum += rotationSpeed;
             
@@ -105,6 +98,6 @@ public class SpaceshipMovement : MonoBehaviour
         speedX = finalSpeedX;
         speedY = finalSpeedY;
         
-        currentDirection = newDirection;
+        //currentDirection = newDirection;
     }
 }
