@@ -9,8 +9,8 @@ using UnityEngine.Tilemaps;
 enum MoveDirection {up, down, right, left, crash}
 public class SpaceshipMovement : MonoBehaviour
 {
-    [SerializeField] private float speedX;
-    [SerializeField] private float speedY;
+    [SerializeField] private float currentSpeedX;
+    [SerializeField] private float currentSpeedY;
     [SerializeField] private float rotationSpeed;
     
     private float currentRotation;
@@ -24,80 +24,119 @@ public class SpaceshipMovement : MonoBehaviour
 
     void Update()
     {
-        transform.localPosition += Vector3.up * (Time.deltaTime * speedY);
-        transform.localPosition += Vector3.right * (Time.deltaTime * speedX);
+        transform.localPosition += Vector3.up * (Time.deltaTime * currentSpeedY);
+        transform.localPosition += Vector3.right * (Time.deltaTime * currentSpeedX);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
         Vector3 planetDirection = (other.transform.position - transform.position).normalized;
+        MoveDirection towardsDirection = currentDirection;
 
         if (currentDirection == MoveDirection.up || currentDirection == MoveDirection.down)
         {
-            currentDirection = planetDirection.x > 0f ? 
+            towardsDirection = planetDirection.x > 0f ? 
                 MoveDirection.right : planetDirection.x < 0f ? 
                     MoveDirection.left : MoveDirection.crash;
         }
+        else if (currentDirection == MoveDirection.right || currentDirection == MoveDirection.left)
+        {
+            towardsDirection = planetDirection.y > 0f ? 
+                MoveDirection.up : planetDirection.y < 0f ? 
+                    MoveDirection.down : MoveDirection.crash;
+        }
+
+        StartCoroutine(SetDirectionDelay(towardsDirection));
+
+        other.enabled = false;
+    }
+
+    IEnumerator SetDirectionDelay(MoveDirection towardsDirection)
+    {
+        yield return new WaitForSeconds(0.5f/rotationSpeed);
         
-        Debug.Log(currentDirection);
-        
-        SetDirection(currentDirection);
+        SetDirection(towardsDirection);
     }
 
     void SetDirection(MoveDirection direction)
     {
-        
+        float finalRotation = currentRotation;
+
+        switch (currentDirection)
+        {
+            case MoveDirection.up:
+                switch (direction)
+                {
+                    case MoveDirection.right:
+                        finalRotation = currentRotation - 90f;
+                        break;
+                    case MoveDirection.left:
+                        finalRotation = currentRotation + 90f;
+                        break;
+                }
+                break;
+            
+            case MoveDirection.down:
+                switch (direction)
+                {
+                    case MoveDirection.right:
+                        finalRotation = currentRotation + 90f;
+                        break;
+                    case MoveDirection.left:
+                        finalRotation = currentRotation - 90f;
+                        break;
+                }
+                break;
+            
+            case MoveDirection.right:
+                switch (direction)
+                {
+                    case MoveDirection.up:
+                        finalRotation = currentRotation + 90f;
+                        break;
+                    case MoveDirection.down:
+                        finalRotation = currentRotation - 90f;
+                        break;
+                }
+                break;
+            
+            case MoveDirection.left:
+                switch (direction)
+                {
+                    case MoveDirection.up:
+                        finalRotation = currentRotation - 90f;
+                        break;
+                    case MoveDirection.down:
+                        finalRotation = currentRotation + 90f;
+                        break;
+                }
+                break;
+        }
+
+        currentDirection = direction;
+
+        StartCoroutine(RotatingCoroutine(finalRotation));
     }
     
     IEnumerator RotatingCoroutine(float finalRotation)
     {
         float rotationSum = currentRotation;
-
-        while (rotationSum < finalRotation)
+        float rotationSence = (finalRotation - currentRotation > 0? 
+            1f : (finalRotation - currentRotation < 0? 
+                -1 : 0f));
+        
+        while (Mathf.Abs(finalRotation - rotationSum) > 0f)
         {
-            float rotationRad = rotationSum;
-            
             transform.localRotation = Quaternion.Euler(Vector3.forward * rotationSum);
-
-            rotationSum += rotationSpeed;
+            
+            currentSpeedY = Mathf.Cos(rotationSum * Mathf.Deg2Rad);
+            currentSpeedX = -Mathf.Sin(rotationSum * Mathf.Deg2Rad);
+            
+            rotationSum += rotationSpeed * rotationSence;
             
             yield return null;
         }
-
+        
         currentRotation = finalRotation;
-    }
-
-    IEnumerator ChangingDirectionCoroutine(int newDirection)
-    {
-        float deltaSpeedX = 0f, deltaSpeedY = 0f;
-        float finalSpeedX = 0f, finalSpeedY = 0f;
-
-        switch (newDirection)
-        {
-            case 0:
-                finalSpeedX = 0f;
-                finalSpeedY = 1f;
-            break;
-            
-            case 1:
-                finalSpeedX = 1f;
-                finalSpeedY = 0f;
-
-                deltaSpeedX = 0.0025f;
-                //deltaSpeedY = -0.1f;
-            break;
-        }
-        
-        while (speedX < finalSpeedX)
-        {
-            speedX += deltaSpeedX;
-            speedY += deltaSpeedY;
-            yield return null;
-        }
-        
-        speedX = finalSpeedX;
-        speedY = finalSpeedY;
-        
-        //currentDirection = newDirection;
     }
 }
