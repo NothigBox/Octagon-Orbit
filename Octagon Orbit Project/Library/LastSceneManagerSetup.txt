@@ -1,5 +1,5 @@
 sceneSetups:
-- path: Assets/_Scenes/Main Game.unity
+- path: Assets/_Scenes/Main Game JP.unity
   isLoaded: 1
   isActive: 1
   isSubScene: 0
