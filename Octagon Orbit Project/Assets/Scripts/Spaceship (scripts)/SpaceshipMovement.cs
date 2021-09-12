@@ -33,8 +33,9 @@ public class SpaceshipMovement : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        var a = tilemap.CellToWorld(Vector3Int.zero);
-        var direction = (transform.position - new Vector3(2.5f, 4.5f, 0f)) - camera.position;
+        Vector3 a = tilemap.CellToWorld(Vector3Int.zero);
+        Vector3 offset = new Vector3(2.5f, 4.5f, 0f);
+        Vector3 direction = (transform.position - offset) - camera.position;
         
         //for (float i = a.; i < 1f; i += 0.5f)
         {
